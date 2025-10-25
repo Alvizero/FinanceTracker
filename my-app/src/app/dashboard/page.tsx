@@ -15,45 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useApi } from '@/hooks/useApi';
 import { useLoadingState } from '@/hooks/useLoadingState';
 import { useDashboardData } from '@/hooks/useDashboardData';
-
-type AccountType = 'banca_intesa' | 'revolut' | 'paypal' | 'portafoglio_carte' | 'portafoglio_monete' | 'musigna_carte' | 'musigna_monete' | 'sterline';
-type TransactionType = 'ingresso' | 'uscita';
-type PaymentMethod = 'contanti' | 'carta';
-
-interface Account {
-    type: AccountType;
-    balance: number;
-}
-
-interface Transaction {
-    id: string;
-    date: string;
-    amount: number;
-    type: TransactionType;
-    paymentMethod: PaymentMethod;
-    source: AccountType;
-    description: string;
-    timestamp: string;
-    accountSnapshot?: any;
-}
-
-interface DailySummary {
-    date: string;
-    totalIngressi: number;
-    totalUscite: number;
-    balance: number;
-    count: number;
-    transactions: Transaction[];
-    cashIngressi: number;
-    cashUscite: number;
-    bankIngressi: number;
-    bankUscite: number;
-    cashBalance: number;
-    bankBalance: number;
-    totalCashAtDate: number;
-    totalBankAtDate: number;
-    totalAtDate: number;
-}
+import { AccountType, Transaction, TransactionType, PaymentMethod, DailySummary } from '@/hooks/types';
 
 const accountTypeMap: Record<string, AccountType> = {
     bancaintesa: 'banca_intesa',
@@ -82,8 +44,7 @@ const formatDate = (dateStr: string) => {
 const DashboardPage = () => {
     const { currentUser, isAdmin, logout } = useAuth();
     const { execute } = useApi();
-    const { withLoading } = useLoadingState();
-    const { accounts, dailySummaries, setAccounts, setDailySummaries, loadUserData } = useDashboardData();
+    const { accounts, dailySummaries, setAccounts, loadUserData } = useDashboardData();
     const { showSuccess, showError, showWarning } = useNotification();
     const { confirm, ConfirmDialog } = useConfirm();
     const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
@@ -178,27 +139,29 @@ const DashboardPage = () => {
         }
     };
 
-    const handleEditTransaction = (transaction: Transaction) => {
-        setEditingTransaction(transaction);
+    const handleEditTransaction = (transaction: Partial<Transaction> & Omit<Transaction, 'amountCarta' | 'amountMonete'>) => {
+        const normalizedTransaction: Transaction = {...transaction, amountCarta: transaction.amountCarta ?? 0, amountMonete: transaction.amountMonete ?? 0,} as Transaction;
 
-        if (transaction.source.includes('portafoglio')) {
+        setEditingTransaction(normalizedTransaction);
+
+        if (normalizedTransaction.source.includes('portafoglio')) {
             setSelectedSource('portafoglio');
-        } else if (transaction.source.includes('musigna')) {
+        } else if (normalizedTransaction.source.includes('musigna')) {
             setSelectedSource('musigna');
         } else {
-            setSelectedSource(transaction.source);
+            setSelectedSource(normalizedTransaction.source);
         }
 
-        if (transaction.source.includes('portafoglio') || transaction.source.includes('musigna')) {
-            if (transaction.paymentMethod === 'carta') {
-                setFormAmountCarta(transaction.amount.toString());
+        if (normalizedTransaction.source.includes('portafoglio') || normalizedTransaction.source.includes('musigna')) {
+            if (normalizedTransaction.paymentMethod === 'carta') {
+                setFormAmountCarta(normalizedTransaction.amountCarta > 0 ? normalizedTransaction.amountCarta.toString() : normalizedTransaction.amount.toString());
                 setFormAmountMonete('0');
             } else {
                 setFormAmountCarta('0');
-                setFormAmountMonete(transaction.amount.toString());
+                setFormAmountMonete(normalizedTransaction.amountMonete > 0 ? normalizedTransaction.amountMonete.toString() : normalizedTransaction.amount.toString());
             }
         } else {
-            setFormAmountCarta(transaction.amount.toString());
+            setFormAmountCarta(normalizedTransaction.amountCarta > 0 ? normalizedTransaction.amountCarta.toString() : normalizedTransaction.amount.toString());
             setFormAmountMonete('0');
         }
 

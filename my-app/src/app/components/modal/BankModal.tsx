@@ -1,6 +1,6 @@
 import React from "react";
 import { X } from "lucide-react";
-import { AccountType } from "./types";
+import { AccountType } from "@/hooks/types";
 
 interface BankModalProps {
   show: boolean;
@@ -34,19 +34,11 @@ export const BankModal: React.FC<BankModalProps> = ({ show, onClose, getAccountL
   if (!show) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="bank-modal-title"
-    >
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="bank-modal-title">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h3 id="bank-modal-title" className="text-lg font-semibold text-gray-900">
-            Dettaglio Banche
-          </h3>
+          <h3 id="bank-modal-title" className="text-lg font-semibold text-gray-900">Dettaglio Banche</h3>
           <button
             type="button"
             onClick={onClose}

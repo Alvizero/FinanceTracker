@@ -1,6 +1,6 @@
 import React from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Users, BarChart2, Settings, ChartArea } from "lucide-react";
+import { Users, Settings, ChartArea } from "lucide-react";
 
 interface MenuItem {
     href: string;

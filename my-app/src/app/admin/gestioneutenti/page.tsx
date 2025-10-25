@@ -11,7 +11,6 @@ import { DeleteUserModal } from '../../components/modal/DeleteUserModal';
 import { useNotification } from '../../components/notification/NotificationContex';
 import { useAuth } from '@/hooks/useAuth';
 import { useApi } from '@/hooks/useApi';
-import { useLoadingState } from '@/hooks/useLoadingState';
 import { useUsersManagement } from '@/hooks/useUsersManagement';
 
 interface UserData {

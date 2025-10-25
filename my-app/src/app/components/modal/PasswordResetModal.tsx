@@ -4,19 +4,9 @@ import React, { useState } from 'react';
 import { X, Lock, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { useConfirm } from './ConfirmDialoogModal';
 
-interface PasswordResetModalProps {
-  show: boolean;
-  onClose: () => void;
-  onSubmit: (newPassword: string) => Promise<void>;
-  username?: string;
-}
+interface PasswordResetModalProps { show: boolean; onClose: () => void; onSubmit: (newPassword: string) => Promise<void>; username?: string; }
 
-export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
-  show,
-  onClose,
-  onSubmit,
-  username,
-}) => {
+export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({ show, onClose, onSubmit, username }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
@@ -118,10 +108,7 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
         aria-modal="true"
         aria-labelledby="password-modal-title"
       >
-        <div
-          className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <div className="flex items-center gap-2">
@@ -156,11 +143,7 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             {/* Error Alert */}
             {errors.length > 0 && (
-              <div
-                className="p-4 bg-red-50 border border-red-200 rounded-lg"
-                role="alert"
-                aria-live="polite"
-              >
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg" role="alert" aria-live="polite">
                 <div className="flex gap-3">
                   <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
                   <div className="flex-1">
@@ -189,16 +172,12 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
                   value={newPassword}
                   onChange={(e) => handlePasswordChange(e.target.value)}
                   onBlur={() => setTouched({ ...touched, password: true })}
-                  className={`w-full px-4 py-2.5 pr-11 border rounded-lg transition-shadow ${
-                    touched.password && !passwordValid
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-200 focus:ring-indigo-500 focus:border-transparent'
-                  } focus:ring-2`}
+                  className={`w-full px-4 py-2.5 pr-11 border rounded-lg transition-shadow ${touched.password && !passwordValid ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-200 focus:ring-indigo-500 focus:border-transparent'} focus:ring-2`}
                   placeholder="Minimo 6 caratteri"
                   required
                   minLength={6}
                   autoComplete="new-password"
-                  aria-invalid={touched.password && !passwordValid}
+                  aria-invalid={touched.confirm && confirmPassword && !passwordsMatch ? true : undefined}
                   aria-describedby="password-requirements"
                   disabled={isSubmitting}
                 />
@@ -241,16 +220,15 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
                   value={confirmPassword}
                   onChange={(e) => handleConfirmChange(e.target.value)}
                   onBlur={() => setTouched({ ...touched, confirm: true })}
-                  className={`w-full px-4 py-2.5 pr-11 border rounded-lg transition-shadow ${
-                    touched.confirm && confirmPassword && !passwordsMatch
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-200 focus:ring-indigo-500 focus:border-transparent'
-                  } focus:ring-2`}
+                  className={`w-full px-4 py-2.5 pr-11 border rounded-lg transition-shadow ${touched.confirm && confirmPassword && !passwordsMatch
+                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                    : 'border-gray-200 focus:ring-indigo-500 focus:border-transparent'
+                    } focus:ring-2`}
                   placeholder="Ripeti la password"
                   required
                   minLength={6}
                   autoComplete="new-password"
-                  aria-invalid={touched.confirm && confirmPassword && !passwordsMatch}
+                  aria-invalid={touched.confirm && confirmPassword && !passwordsMatch ? true : undefined}
                   aria-describedby="password-match"
                   disabled={isSubmitting}
                 />
@@ -302,8 +280,6 @@ export const PasswordResetModal: React.FC<PasswordResetModalProps> = ({
           </form>
         </div>
       </div>
-
-      {/* ✅ Renderizza il ConfirmDialog per la conferma finale */}
       <ConfirmDialog />
     </>
   );

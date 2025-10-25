@@ -3,22 +3,20 @@
 import React from "react";
 import { X } from "lucide-react";
 import { useConfirm } from './ConfirmDialoogModal';
-
-interface Transaction {
-  id: string;
-  date: string;
-  type: "ingresso" | "uscita";
-  source: string;
-  amountCarta: number;
-  amountMonete?: number;
-  description: string;
-}
+import { Transaction } from '@/hooks/types';
+import { Dispatch, SetStateAction } from 'react';
 
 interface TransactionModalProps {
   show: boolean;
   onClose: () => void;
-  onSubmit: (formData: FormData) => void;
-  editingTransaction?: Transaction | null;
+  onSubmit: (formData: FormData) => Promise<void>;
+  editingTransaction: Transaction | null;
+  selectedSource: string;
+  setSelectedSource: Dispatch<SetStateAction<string>>;
+  formAmountCarta: string;
+  setFormAmountCarta: Dispatch<SetStateAction<string>>;
+  formAmountMonete: string;
+  setFormAmountMonete: Dispatch<SetStateAction<string>>;
 }
 
 const SOURCES = [
@@ -31,16 +29,7 @@ const SOURCES = [
 
 const WALLET_SOURCES = ["portafoglio", "musigna"];
 
-export const TransactionModal: React.FC<TransactionModalProps> = ({ 
-  show, 
-  onClose, 
-  onSubmit, 
-  editingTransaction 
-}) => {
-  const [selectedSource, setSelectedSource] = React.useState(
-    editingTransaction?.source || "banca_intesa"
-  );
-
+export const TransactionModal: React.FC<TransactionModalProps> = ({ show, onClose, onSubmit, editingTransaction, selectedSource, setSelectedSource, formAmountCarta, setFormAmountCarta, formAmountMonete, setFormAmountMonete }) => {
   const { confirm, ConfirmDialog } = useConfirm();
 
   const showSplitAmount = WALLET_SOURCES.includes(selectedSource);
@@ -61,8 +50,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       if (!confirmed) return;
     }
 
-    onSubmit(new FormData(e.currentTarget));
+    await onSubmit(new FormData(e.currentTarget));
   };
+
+  const handleAmountCartaChange = (e: React.ChangeEvent<HTMLInputElement>) => { setFormAmountCarta(e.target.value); };
+  const handleAmountMoneteChange = (e: React.ChangeEvent<HTMLInputElement>) => { setFormAmountMonete(e.target.value); };
 
   if (!show) return null;
 
@@ -75,10 +67,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        <div 
-          className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200" 
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <h3 id="modal-title" className="text-lg font-semibold text-gray-900">
@@ -98,9 +87,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             {/* Data */}
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
-                Data
-              </label>
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">Data</label>
               <input
                 id="date"
                 type="date"
@@ -113,15 +100,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
             {/* Tipo */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Tipo
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Tipo</label>
               <div className="grid grid-cols-2 gap-3">
                 {["ingresso", "uscita"].map((type) => (
-                  <label 
-                    key={type} 
-                    className="relative flex items-center justify-center px-4 py-2.5 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-indigo-300 has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50"
-                  >
+                  <label key={type} className="relative flex items-center justify-center px-4 py-2.5 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-indigo-300 has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
                     <input
                       type="radio"
                       name="type"
@@ -172,7 +154,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     step="0.01"
                     min="0"
                     name="amountCarta"
-                    defaultValue={editingTransaction?.amountCarta}
+                    value={formAmountCarta}
+                    onChange={handleAmountCartaChange}
                     placeholder="0.00"
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow text-right"
                   />
@@ -187,7 +170,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     step="0.01"
                     min="0"
                     name="amountMonete"
-                    defaultValue={editingTransaction?.amountMonete}
+                    value={formAmountMonete}
+                    onChange={handleAmountMoneteChange}
                     placeholder="0.00"
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow text-right"
                   />
@@ -204,10 +188,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   step="0.01"
                   min="0"
                   name="amountCarta"
-                  defaultValue={editingTransaction?.amountCarta}
+                  value={formAmountCarta}
+                  onChange={handleAmountCartaChange}
                   placeholder="0.00"
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow text-right"
                   required
+                />
+                <input
+                  type="hidden"
+                  name="amountMonete"
+                  value="0"
                 />
               </div>
             )}
