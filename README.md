@@ -82,7 +82,7 @@ BCRYPT_ROUNDS=10
 
 ### Prerequisiti
 
-- Node.js (v18+)
+- Node.js (v18+) recomended: v24.10.0
 - MariaDB
 - npm o yarn
 
