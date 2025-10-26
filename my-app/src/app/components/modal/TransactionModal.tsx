@@ -1,6 +1,6 @@
 'use client';
 
-import React from "react";
+import React, { useEffect } from "react";
 import { X } from "lucide-react";
 import { useConfirm } from './ConfirmDialoogModal';
 import { Transaction } from '@/hooks/types';
@@ -29,15 +29,45 @@ const SOURCES = [
 
 const WALLET_SOURCES = ["portafoglio", "musigna"];
 
-export const TransactionModal: React.FC<TransactionModalProps> = ({ show, onClose, onSubmit, editingTransaction, selectedSource, setSelectedSource, formAmountCarta, setFormAmountCarta, formAmountMonete, setFormAmountMonete }) => {
+export const TransactionModal: React.FC<TransactionModalProps> = ({
+  show,
+  onClose,
+  onSubmit,
+  editingTransaction,
+  selectedSource,
+  setSelectedSource,
+  formAmountCarta,
+  setFormAmountCarta,
+  formAmountMonete,
+  setFormAmountMonete
+}) => {
   const { confirm, ConfirmDialog } = useConfirm();
 
   const showSplitAmount = WALLET_SOURCES.includes(selectedSource);
   const isEditing = Boolean(editingTransaction);
 
+  // Stati per gli altri campi del form
+  const [formDate, setFormDate] = React.useState(getLocalDateString());
+  const [formType, setFormType] = React.useState("uscita");
+  const [formDescription, setFormDescription] = React.useState("");
+
+  // Sincronizza i valori quando editingTransaction cambia
+  useEffect(() => {
+    if (editingTransaction) {
+      setFormDate(getLocalDateString(new Date(editingTransaction.date)));
+      setFormType(editingTransaction.type);
+      setFormDescription(editingTransaction.description || "");
+    } else {
+      // Reset per nuova transazione
+      setFormDate(getLocalDateString());
+      setFormType("uscita");
+      setFormDescription("");
+    }
+  }, [editingTransaction]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     if (isEditing) {
       const confirmed = await confirm({
         title: 'Conferma Modifica',
@@ -50,11 +80,31 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ show, onClos
       if (!confirmed) return;
     }
 
-    await onSubmit(new FormData(e.currentTarget));
+    // Crea FormData manualmente con i valori degli stati
+    const formData = new FormData();
+    formData.append('date', formDate);
+    formData.append('type', formType);
+    formData.append('description', formDescription);
+    formData.append('source', selectedSource);
+    formData.append('amountCarta', formAmountCarta || '0');
+    formData.append('amountMonete', formAmountMonete || '0');
+
+    await onSubmit(formData);
   };
 
-  const handleAmountCartaChange = (e: React.ChangeEvent<HTMLInputElement>) => { setFormAmountCarta(e.target.value); };
-  const handleAmountMoneteChange = (e: React.ChangeEvent<HTMLInputElement>) => { setFormAmountMonete(e.target.value); };
+  const handleAmountCartaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormAmountCarta(e.target.value);
+  };
+
+  const handleAmountMoneteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormAmountMonete(e.target.value);
+  };
+
+  function getLocalDateString(date = new Date()) {
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().split("T")[0];
+  }
 
   if (!show) return null;
 
@@ -67,7 +117,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ show, onClos
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
             <h3 id="modal-title" className="text-lg font-semibold text-gray-900">
@@ -87,12 +140,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ show, onClos
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             {/* Data */}
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">Data</label>
+              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
+                Data
+              </label>
               <input
                 id="date"
                 type="date"
                 name="date"
-                defaultValue={editingTransaction?.date || new Date().toISOString().split("T")[0]}
+                value={formDate}
+                onChange={(e) => setFormDate(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
                 required
               />
@@ -100,17 +156,22 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ show, onClos
 
             {/* Tipo */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">Tipo</label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Tipo
+              </label>
               <div className="grid grid-cols-2 gap-3">
                 {["ingresso", "uscita"].map((type) => (
-                  <label key={type} className="relative flex items-center justify-center px-4 py-2.5 border-2 border-gray-200 rounded-lg cursor-pointer transition-all hover:border-indigo-300 has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50">
+                  <label
+                    key={type}
+                    className={`relative flex items-center justify-center px-4 py-2.5 border-2 rounded-lg cursor-pointer transition-all hover:border-indigo-300 ${formType === type ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200'
+                      }`}
+                  >
                     <input
                       type="radio"
                       name="type"
                       value={type}
-                      defaultChecked={
-                        editingTransaction?.type === type || (!editingTransaction && type === "uscita")
-                      }
+                      checked={formType === type}
+                      onChange={(e) => setFormType(e.target.value)}
                       className="sr-only"
                       required
                     />
@@ -194,11 +255,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ show, onClos
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow text-right"
                   required
                 />
-                <input
-                  type="hidden"
-                  name="amountMonete"
-                  value="0"
-                />
               </div>
             )}
 
@@ -211,7 +267,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ show, onClos
                 id="description"
                 name="description"
                 rows={3}
-                defaultValue={editingTransaction?.description}
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
                 placeholder="Inserisci una descrizione..."
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow resize-none"
               />
@@ -237,7 +294,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({ show, onClos
         </div>
       </div>
 
-      {/* ✅ Renderizza il ConfirmDialog */}
+      {/* Renderizza il ConfirmDialog */}
       <ConfirmDialog />
     </>
   );

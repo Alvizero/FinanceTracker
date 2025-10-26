@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Wallet, Building2, ChevronDown, ChevronUp, Plus, Edit2, Trash2, User } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Building2, ChevronDown, ChevronUp, Plus, Edit2, Trash2, User, Search, X } from 'lucide-react';
 
 import Header from "@/app/components/Header";
 import Menu from "@/app/components/Menu";
@@ -55,10 +55,37 @@ const DashboardPage = () => {
     const [selectedSource, setSelectedSource] = useState('banca_intesa');
     const [formAmountCarta, setFormAmountCarta] = useState('');
     const [formAmountMonete, setFormAmountMonete] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         loadUserData();
     }, []);
+
+    // Funzione di filtro per cercare transazioni per data o descrizione
+    const filteredDailySummaries = dailySummaries.map(summary => {
+        const query = searchQuery.toLowerCase().trim();
+
+        if (!query) return summary;
+
+        // Filtra le transazioni all'interno del riepilogo giornaliero
+        const filteredTransactions = summary.transactions.filter(transaction => {
+            const matchesDescription = transaction.description.toLowerCase().includes(query);
+            const matchesDate = summary.date.includes(query) || formatDate(summary.date).includes(query);
+
+            return matchesDescription || matchesDate;
+        });
+
+        // Se ci sono transazioni che corrispondono o la data corrisponde, ritorna il summary
+        if (filteredTransactions.length > 0 || summary.date.includes(query) || formatDate(summary.date).includes(query)) {
+            return {
+                ...summary,
+                transactions: filteredTransactions.length > 0 ? filteredTransactions : summary.transactions,
+                count: filteredTransactions.length > 0 ? filteredTransactions.length : summary.count
+            };
+        }
+
+        return null;
+    }).filter(summary => summary !== null) as DailySummary[];
 
     const getTotalBalance = () => accounts.reduce((sum, acc) => sum + acc.balance, 0);
     const getBankTotal = () => accounts.filter(a => bankAccounts.includes(a.type)).reduce((sum, acc) => sum + acc.balance, 0);
@@ -140,7 +167,7 @@ const DashboardPage = () => {
     };
 
     const handleEditTransaction = (transaction: Partial<Transaction> & Omit<Transaction, 'amountCarta' | 'amountMonete'>) => {
-        const normalizedTransaction: Transaction = {...transaction, amountCarta: transaction.amountCarta ?? 0, amountMonete: transaction.amountMonete ?? 0,} as Transaction;
+        const normalizedTransaction: Transaction = { ...transaction, amountCarta: transaction.amountCarta ?? 0, amountMonete: transaction.amountMonete ?? 0, } as Transaction;
 
         setEditingTransaction(normalizedTransaction);
 
@@ -238,7 +265,11 @@ const DashboardPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                     <DashboardCard
                         title="Totale Patrimonio"
-                        value={formatCurrency(getTotalBalance())}
+                        customContent={
+                            <div className="text-2xl font-bold text-indigo-700">
+                                {formatCurrency(getTotalBalance())}
+                            </div>
+                        }
                     />
                     <DashboardCard
                         title="Soldi in Banca"
@@ -287,17 +318,55 @@ const DashboardPage = () => {
                 {/* Storico Transazioni */}
                 <div className="bg-white rounded-xl shadow-md border border-gray-200">
                     <div className="p-6 border-b border-gray-200">
-                        <h2 className="text-xl font-bold text-gray-800">Storico Transazioni</h2>
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-gray-800">Storico Transazioni</h2>
+
+                            {/* Barra di ricerca */}
+                            <div className="relative w-96">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Cerca per data o descrizione..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery('')}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                    >
+                                        <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Contatore risultati */}
+                        {searchQuery && (
+                            <p className="text-sm text-gray-500 mt-2">
+                                {filteredDailySummaries.length} {filteredDailySummaries.length === 1 ? 'giorno' : 'giorni'} con risultati trovato/i
+                            </p>
+                        )}
                     </div>
-                    {dailySummaries.length === 0 ? (
+
+                    {filteredDailySummaries.length === 0 ? (
                         <div className="p-12 text-center text-gray-500">
                             <Wallet className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                            <p className="text-lg font-medium">Nessuna transazione trovata</p>
-                            <p className="text-sm mt-2">Inizia creando la tua prima transazione</p>
+                            <p className="text-lg font-medium">
+                                {searchQuery ? 'Nessuna transazione trovata' : 'Nessuna transazione trovata'}
+                            </p>
+                            <p className="text-sm mt-2">
+                                {searchQuery
+                                    ? 'Prova con un altro termine di ricerca'
+                                    : 'Inizia creando la tua prima transazione'}
+                            </p>
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-200">
-                            {dailySummaries.map(summary => (
+                            {filteredDailySummaries.map(summary => (
                                 <div key={summary.date}>
                                     {/* Riga Riepilogo Giornaliero */}
                                     <div
